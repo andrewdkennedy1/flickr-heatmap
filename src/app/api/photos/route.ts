@@ -5,6 +5,8 @@ export async function GET(request: NextRequest): Promise<Response> {
     try {
         const searchParams = request.nextUrl.searchParams;
         const username = searchParams.get('username');
+        const modeParam = searchParams.get('mode');
+        const mode = modeParam === 'upload' ? 'upload' : 'taken';
 
         if (!username) {
             return NextResponse.json({ error: 'Username is required' }, { status: 400 });
@@ -30,8 +32,10 @@ export async function GET(request: NextRequest): Promise<Response> {
         }
 
         const yearParam = searchParams.get('year');
-        let minDate: string | undefined;
-        let maxDate: string | undefined;
+        let minUploadDate: string | undefined;
+        let maxUploadDate: string | undefined;
+        let minTakenDate: string | undefined;
+        let maxTakenDate: string | undefined;
 
         if (yearParam) {
             const parsedYear = Number.parseInt(yearParam, 10);
@@ -40,18 +44,27 @@ export async function GET(request: NextRequest): Promise<Response> {
                 return NextResponse.json({ error: 'Invalid year' }, { status: 400 });
             }
 
-            const start = new Date(Date.UTC(parsedYear, 0, 1, 0, 0, 0));
-            const end =
-                parsedYear === currentYear
-                    ? new Date()
-                    : new Date(Date.UTC(parsedYear + 1, 0, 1, 0, 0, 0) - 1);
-
-            minDate = Math.floor(start.getTime() / 1000).toString();
-            maxDate = Math.floor(end.getTime() / 1000).toString();
+            if (mode === 'taken') {
+                const startDate = `${parsedYear}-01-01`;
+                const endDate =
+                    parsedYear === currentYear
+                        ? new Date().toISOString().split('T')[0]
+                        : `${parsedYear}-12-31`;
+                minTakenDate = startDate;
+                maxTakenDate = endDate;
+            } else {
+                const start = new Date(Date.UTC(parsedYear, 0, 1, 0, 0, 0));
+                const end =
+                    parsedYear === currentYear
+                        ? new Date()
+                        : new Date(Date.UTC(parsedYear + 1, 0, 1, 0, 0, 0) - 1);
+                minUploadDate = Math.floor(start.getTime() / 1000).toString();
+                maxUploadDate = Math.floor(end.getTime() / 1000).toString();
+            }
         } else {
             const lastYear = new Date();
             lastYear.setFullYear(lastYear.getFullYear() - 1);
-            minDate = Math.floor(lastYear.getTime() / 1000).toString();
+            minUploadDate = Math.floor(lastYear.getTime() / 1000).toString();
         }
 
         const pageParam = searchParams.get('page');
@@ -66,7 +79,12 @@ export async function GET(request: NextRequest): Promise<Response> {
             }
 
             const safePerPage = Number.isFinite(perPage) && perPage > 0 ? Math.min(perPage, 500) : 500;
-            const result = await service.getUserPhotosPage(userId, page, safePerPage, minDate, maxDate);
+            const result = await service.getUserPhotosPage(userId, page, safePerPage, {
+                minUploadDate,
+                maxUploadDate,
+                minTakenDate,
+                maxTakenDate,
+            });
 
             return NextResponse.json({
                 success: true,
@@ -77,8 +95,13 @@ export async function GET(request: NextRequest): Promise<Response> {
             });
         }
 
-        const photos = await service.getUserPhotos(userId, minDate, maxDate);
-        const activityData = FlickrService.aggregatePhotoData(photos);
+        const photos = await service.getUserPhotos(userId, {
+            minUploadDate,
+            maxUploadDate,
+            minTakenDate,
+            maxTakenDate,
+        });
+        const activityData = FlickrService.aggregatePhotoData(photos, mode);
 
         return NextResponse.json({
             success: true,

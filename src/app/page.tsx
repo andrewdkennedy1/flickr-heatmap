@@ -21,13 +21,24 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const PRIMARY_LABEL = 'photos taken';
+const UPLOAD_LABEL = 'uploads';
+
+type PhotoRecord = { dateupload: string; datetaken?: string };
+
+type ActivityMode = 'taken' | 'upload';
+
 export default function Home() {
   const currentYear = new Date().getFullYear();
   const [username, setUsername] = useState('yoshislens');
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [loadingLabel, setLoadingLabel] = useState('');
   const [data, setData] = useState<ActivityData[] | null>(null);
+  const [uploadData, setUploadData] = useState<ActivityData[] | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -54,12 +65,24 @@ export default function Home() {
     return days;
   };
 
-  const aggregatePhotos = (photos: Array<{ dateupload: string }>): ActivityData[] => {
+  const aggregatePhotos = (photos: PhotoRecord[], mode: ActivityMode): ActivityData[] => {
     const counts: Record<string, number> = {};
 
     photos.forEach((photo) => {
-      const date = new Date(Number.parseInt(photo.dateupload, 10) * 1000);
-      const dateStr = date.toISOString().split('T')[0];
+      let dateStr = '';
+      if (mode === 'taken') {
+        if (photo.datetaken) {
+          dateStr = photo.datetaken.split(' ')[0] ?? '';
+        } else {
+          const fallback = new Date(Number.parseInt(photo.dateupload, 10) * 1000);
+          dateStr = fallback.toISOString().split('T')[0];
+        }
+      } else {
+        const date = new Date(Number.parseInt(photo.dateupload, 10) * 1000);
+        dateStr = date.toISOString().split('T')[0];
+      }
+
+      if (!dateStr) return;
       counts[dateStr] = (counts[dateStr] || 0) + 1;
     });
 
@@ -132,50 +155,176 @@ export default function Home() {
     return { totalUploads, activeDays, peakCount, peakDate, longestStreak };
   }, [data]);
 
+  const handleShare = async () => {
+    if (!data) return;
+
+    const canvas = document.createElement('canvas');
+    const width = 1200;
+    const height = 630;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const drawRoundedRect = (
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      r: number
+    ) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    };
+
+    const bg = ctx.createLinearGradient(0, 0, width, height);
+    bg.addColorStop(0, '#020617');
+    bg.addColorStop(1, '#0f172a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+    ctx.beginPath();
+    ctx.arc(1030, 120, 220, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+    ctx.beginPath();
+    ctx.arc(150, 520, 220, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    drawRoundedRect(70, 70, width - 140, height - 140, 28);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+    ctx.lineWidth = 2;
+    drawRoundedRect(70, 70, width - 140, height - 140, 28);
+    ctx.stroke();
+
+    ctx.fillStyle = '#d1fae5';
+    ctx.font = 'bold 22px ui-sans-serif, system-ui';
+    ctx.fillText('Flickr Heatmap', 120, 140);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 48px ui-sans-serif, system-ui';
+    ctx.fillText(`${username}'s ${PRIMARY_LABEL}`, 120, 200);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '20px ui-sans-serif, system-ui';
+    ctx.fillText(`${selectedYear} • Photos taken activity`, 120, 238);
+
+    const statTop = 300;
+    const statLeft = 120;
+    const statGap = 240;
+
+    const statsList = [
+      { label: 'Total photos taken', value: stats.totalUploads.toLocaleString() },
+      { label: 'Active days', value: stats.activeDays.toString() },
+      { label: 'Peak day', value: stats.peakCount.toString() },
+      { label: 'Longest streak', value: stats.longestStreak.toString() },
+    ];
+
+    statsList.forEach((item, index) => {
+      const x = statLeft + statGap * index;
+      ctx.fillStyle = '#22c55e';
+      ctx.font = 'bold 36px ui-sans-serif, system-ui';
+      ctx.fillText(item.value, x, statTop);
+      ctx.fillStyle = '#cbd5f5';
+      ctx.font = '18px ui-sans-serif, system-ui';
+      ctx.fillText(item.label, x, statTop + 28);
+    });
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '16px ui-sans-serif, system-ui';
+    ctx.fillText('Generated with Flickr Heatmap', 120, 520);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 18px ui-sans-serif, system-ui';
+    ctx.fillText(stats.peakDate ? `Peak date: ${stats.peakDate}` : 'Peak date: —', 120, 555);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${username}-${selectedYear}-flickr-heatmap.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+  };
+
+  const fetchActivity = async (mode: ActivityMode, targetUsername: string) => {
+    const perPage = 500;
+    let page = 1;
+    let totalPages = 1;
+    const allPhotos: PhotoRecord[] = [];
+
+    setLoadingLabel(mode === 'taken' ? 'Loading photos taken…' : 'Loading upload activity…');
+    setProgress(0);
+
+    do {
+      const response = await fetch(
+        `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${selectedYear}&mode=${mode}&page=${page}&perPage=${perPage}`
+      );
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch photos');
+      }
+
+      allPhotos.push(...(result.photos ?? []));
+      totalPages = result.totalPages ?? 1;
+      setProgress(Math.round((page / totalPages) * 100));
+      page += 1;
+    } while (page <= totalPages);
+
+    const filledData = fillYearData(aggregatePhotos(allPhotos, mode), selectedYear);
+
+    return { data: filledData, totalPhotos: allPhotos.length };
+  };
+
   const handleFetch = async (e?: React.FormEvent, selectedUsername?: string) => {
     e?.preventDefault();
     const targetUsername = selectedUsername ?? username;
     if (!targetUsername) return;
 
     setLoading(true);
-    setProgress(0);
     setError(null);
+    setUploadNotice(null);
     setData(null);
+    setUploadData(null);
 
     try {
-      const perPage = 500;
-      let page = 1;
-      let totalPages = 1;
-      const allPhotos: Array<{ dateupload: string }> = [];
-
-      do {
-        const response = await fetch(
-          `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${selectedYear}&page=${page}&perPage=${perPage}`
-        );
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to fetch photos');
-        }
-
-        allPhotos.push(...(result.photos ?? []));
-        totalPages = result.totalPages ?? 1;
-        setProgress(Math.round((page / totalPages) * 100));
-        page += 1;
-      } while (page <= totalPages);
-
-      const filledData = fillYearData(aggregatePhotos(allPhotos), selectedYear);
-      if (allPhotos.length === 0) {
-        setError(`No photo activity found for ${selectedYear}. Try a previous year.`);
+      const takenResult = await fetchActivity('taken', targetUsername);
+      if (takenResult.totalPhotos === 0) {
+        setError(`No photos taken found for ${selectedYear}. Try a previous year.`);
       }
-      setData(filledData);
+      setData(takenResult.data);
       setUsername(targetUsername);
+
+      if (showUpload) {
+        const uploadResult = await fetchActivity('upload', targetUsername);
+        if (uploadResult.totalPhotos === 0) {
+          setUploadNotice(`No upload activity found for ${selectedYear}.`);
+        }
+        setUploadData(uploadResult.data);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(message);
     } finally {
       setLoading(false);
       setProgress(0);
+      setLoadingLabel('');
     }
   };
 
@@ -209,9 +358,11 @@ export default function Home() {
       demoData.push({ date: dateStr, count, level });
     }
     setData(demoData.sort((a, b) => a.date.localeCompare(b.date)));
+    setUploadData(null);
     setUsername('DemoUser');
     setSelectedYear(currentYear);
     setError(null);
+    setUploadNotice(null);
   };
 
   const handleQuickSelect = (value: string) => {
@@ -234,7 +385,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.2em] text-emerald-200/80">Flickr Heatmap</p>
-              <p className="text-slate-400">Upload frequency, made visible.</p>
+              <p className="text-slate-400">Photo-taking rhythms, visualized.</p>
             </div>
           </div>
 
@@ -272,28 +423,28 @@ export default function Home() {
             >
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
                 <Wand2 size={14} />
-                Instant, privacy-aware insights
+                See when you actually shot photos
               </div>
               <h1 className="text-4xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
-                Discover when your photography <span className="text-emerald-300">thrives</span>.
+                Track the days your photography <span className="text-emerald-300">happened</span>.
               </h1>
               <p className="max-w-2xl text-lg text-slate-300">
-                Pick a year and a Flickr username to generate a contribution-style calendar. Log in to include
-                private uploads in the visualization.
+                Pick a year and a Flickr username to reveal days photos were taken. Upload activity is available as
+                an optional secondary view.
               </p>
             </motion.div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               {[
                 {
-                  title: 'Year-by-year coverage',
-                  icon: <Calendar className="text-emerald-300" size={18} />,
-                  description: 'Select a year to surface every streak, lull, and comeback.',
+                  title: 'Date taken first',
+                  icon: <Camera className="text-emerald-300" size={18} />,
+                  description: 'Highlights when you captured moments, not just when you uploaded them.',
                 },
                 {
                   title: 'Secure by design',
                   icon: <ShieldCheck className="text-blue-300" size={18} />,
-                  description: 'OAuth keeps your credentials safe. Only you can see private uploads when logged in.',
+                  description: 'OAuth keeps your credentials safe. Only you can see private photos when logged in.',
                 },
                 {
                   title: 'Global usernames',
@@ -378,6 +529,16 @@ export default function Home() {
                 </div>
               </div>
 
+              <label className="flex items-center gap-3 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={showUpload}
+                  onChange={(e) => setShowUpload(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-900/70 text-emerald-400 focus:ring-emerald-400/40"
+                />
+                Show upload activity as a secondary heatmap
+              </label>
+
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="submit"
@@ -399,7 +560,7 @@ export default function Home() {
               {loading && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Loading photos…</span>
+                    <span>{loadingLabel || 'Loading photos…'}</span>
                     <span>{progress}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-800/80" role="status" aria-live="polite">
@@ -418,7 +579,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPinned size={16} className="text-sky-300" />
-                  Want private uploads included? Log in, then run your username.
+                  Want private photos included? Log in, then run your username.
                 </div>
               </div>
 
@@ -443,12 +604,12 @@ export default function Home() {
           {[
             {
               title: 'Why log in?',
-              body: 'Authenticated sessions let us include your private uploads in the heatmap while keeping your data on Flickr.',
+              body: 'Authenticated sessions let us include private photos in the heatmap while keeping your data on Flickr.',
               icon: <ShieldCheck size={18} className="text-emerald-300" />,
             },
             {
-              title: 'What counts as an upload?',
-              body: 'Every photo upload is counted on the day it was posted for the selected year.',
+              title: 'What counts as a taken day?',
+              body: 'We use the photo metadata date taken, not the upload date, for the main heatmap.',
               icon: <Camera size={18} className="text-sky-300" />,
             },
             {
@@ -481,11 +642,24 @@ export default function Home() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="space-y-6"
             >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Photos taken summary</p>
+                  <p className="text-xs text-slate-400">Share your year with a single card.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="rounded-full border border-slate-700/80 bg-slate-900/70 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-emerald-400/50 hover:text-white"
+                >
+                  Share card (PNG)
+                </button>
+              </div>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5">
                   <div className="mb-2 flex items-center gap-2 text-slate-400">
                     <Calendar size={18} />
-                    <span className="text-xs uppercase tracking-[0.2em]">Total uploads</span>
+                    <span className="text-xs uppercase tracking-[0.2em]">Total photos taken</span>
                   </div>
                   <div className="text-4xl font-black text-emerald-300">{stats.totalUploads.toLocaleString()}</div>
                   <p className="mt-2 text-xs text-slate-500">In {selectedYear}.</p>
@@ -496,7 +670,7 @@ export default function Home() {
                     <span className="text-xs uppercase tracking-[0.2em]">Active days</span>
                   </div>
                   <div className="text-4xl font-black text-blue-300">{stats.activeDays}</div>
-                  <p className="mt-2 text-xs text-slate-500">Days with one or more uploads.</p>
+                  <p className="mt-2 text-xs text-slate-500">Days with one or more photos taken.</p>
                 </div>
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5">
                   <div className="mb-2 flex items-center gap-2 text-slate-400">
@@ -505,7 +679,7 @@ export default function Home() {
                   </div>
                   <div className="text-4xl font-black text-teal-200">{stats.peakCount}</div>
                   <p className="mt-2 text-xs text-slate-500">
-                    {stats.peakDate ? `Highest uploads on ${stats.peakDate}` : 'Run a search to see your peak day.'}
+                    {stats.peakDate ? `Most photos taken on ${stats.peakDate}` : 'Run a search to see your peak day.'}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5">
@@ -514,11 +688,35 @@ export default function Home() {
                     <span className="text-xs uppercase tracking-[0.2em]">Longest streak</span>
                   </div>
                   <div className="text-4xl font-black text-amber-300">{stats.longestStreak}</div>
-                  <p className="mt-2 text-xs text-slate-500">Consecutive days with uploads.</p>
+                  <p className="mt-2 text-xs text-slate-500">Consecutive days with photos taken.</p>
                 </div>
               </div>
 
-              <Heatmap data={data} username={username} yearLabel={selectedYear.toString()} />
+              <Heatmap data={data} username={username} yearLabel={selectedYear.toString()} activityLabel={PRIMARY_LABEL} />
+
+              {showUpload && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-white">Upload activity</p>
+                      <p className="text-xs text-slate-400">Optional view of when photos were uploaded.</p>
+                    </div>
+                    {uploadNotice && <span className="text-xs text-amber-300">{uploadNotice}</span>}
+                  </div>
+                  {uploadData ? (
+                    <Heatmap
+                      data={uploadData}
+                      username={username}
+                      yearLabel={selectedYear.toString()}
+                      activityLabel={UPLOAD_LABEL}
+                    />
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-800/70 bg-slate-900/40 p-6 text-center text-sm text-slate-400">
+                      Run the search again to load upload activity for this year.
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div

@@ -10,6 +10,7 @@ interface HeatmapProps {
   data: ActivityData[];
   username: string;
   yearLabel: string;
+  activityLabel: string;
 }
 
 const theme: ThemeInput = {
@@ -17,7 +18,7 @@ const theme: ThemeInput = {
   dark: ['#0b1120', '#0e4429', '#047857', '#14b8a6', '#34d399'],
 };
 
-export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, activityLabel }) => {
   const [activeDay, setActiveDay] = useState<ActivityData | null>(null);
   const holdTimerRef = useRef<number | null>(null);
   const holdActiveRef = useRef(false);
@@ -100,14 +101,16 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel }) =
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/70">Activity heatmap</p>
-            <h2 className="text-3xl font-bold text-white text-glow">{username}&apos;s uploads</h2>
+            <h2 className="text-3xl font-bold text-white text-glow">
+              {username}&apos;s {activityLabel}
+            </h2>
             <p className="text-sm text-slate-400">Every square below represents a day in {yearLabel}.</p>
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-slate-300">
             <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-2 frosted-border">
               <Sparkles size={16} className="text-emerald-300" />
               <span className="font-semibold text-white">{totalUploads.toLocaleString()}</span>
-              <span className="text-slate-400">uploads</span>
+              <span className="text-slate-400">{activityLabel}</span>
             </div>
             <div className="flex items-center gap-2 rounded-full bg-blue-500/10 px-3 py-2 frosted-border">
               <CalendarRange size={16} className="text-blue-300" />
@@ -127,7 +130,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel }) =
             data={data}
             theme={theme}
             colorScheme="dark"
-            labels={{ totalCount: `{{count}} photos in ${yearLabel}` }}
+            labels={{ totalCount: `{{count}} ${activityLabel} in ${yearLabel}` }}
             renderBlock={(block, activity) => {
               const enhancedBlock = React.cloneElement(block, {
                 onPointerDown: (event: React.PointerEvent<SVGRectElement>) =>

@@ -11,6 +11,7 @@ export interface FlickrPhoto {
   isfriend: number;
   isfamily: number;
   dateupload: string;
+  datetaken?: string;
 }
 
 export interface ActivityData {
@@ -90,8 +91,12 @@ export class FlickrService {
 
   async getUserPhotos(
     userId: string,
-    minUploadDate?: string,
-    maxUploadDate?: string
+    filters: {
+      minUploadDate?: string;
+      maxUploadDate?: string;
+      minTakenDate?: string;
+      maxTakenDate?: string;
+    } = {}
   ): Promise<FlickrPhoto[]> {
     const allPhotos: FlickrPhoto[] = [];
     let page = 1;
@@ -100,17 +105,25 @@ export class FlickrService {
     do {
       const params: Record<string, string> = {
         user_id: userId,
-        extras: 'date_upload',
+        extras: 'date_upload,date_taken',
         per_page: '500',
         page: page.toString(),
       };
 
-      if (minUploadDate) {
-        params.min_upload_date = minUploadDate;
+      if (filters.minUploadDate) {
+        params.min_upload_date = filters.minUploadDate;
       }
 
-      if (maxUploadDate) {
-        params.max_upload_date = maxUploadDate;
+      if (filters.maxUploadDate) {
+        params.max_upload_date = filters.maxUploadDate;
+      }
+
+      if (filters.minTakenDate) {
+        params.min_taken_date = filters.minTakenDate;
+      }
+
+      if (filters.maxTakenDate) {
+        params.max_taken_date = filters.maxTakenDate;
       }
 
       const data = await this.fetchFlickr('flickr.people.getPhotos', params);
@@ -130,22 +143,34 @@ export class FlickrService {
     userId: string,
     page: number,
     perPage: number,
-    minUploadDate?: string,
-    maxUploadDate?: string
+    filters: {
+      minUploadDate?: string;
+      maxUploadDate?: string;
+      minTakenDate?: string;
+      maxTakenDate?: string;
+    } = {}
   ): Promise<{ photos: FlickrPhoto[]; totalPages: number }> {
     const params: Record<string, string> = {
       user_id: userId,
-      extras: 'date_upload',
+      extras: 'date_upload,date_taken',
       per_page: perPage.toString(),
       page: page.toString(),
     };
 
-    if (minUploadDate) {
-      params.min_upload_date = minUploadDate;
+    if (filters.minUploadDate) {
+      params.min_upload_date = filters.minUploadDate;
     }
 
-    if (maxUploadDate) {
-      params.max_upload_date = maxUploadDate;
+    if (filters.maxUploadDate) {
+      params.max_upload_date = filters.maxUploadDate;
+    }
+
+    if (filters.minTakenDate) {
+      params.min_taken_date = filters.minTakenDate;
+    }
+
+    if (filters.maxTakenDate) {
+      params.max_taken_date = filters.maxTakenDate;
     }
 
     const data = await this.fetchFlickr('flickr.people.getPhotos', params);
@@ -155,12 +180,27 @@ export class FlickrService {
     return { photos, totalPages };
   }
 
-  static aggregatePhotoData(photos: FlickrPhoto[]): ActivityData[] {
+  static aggregatePhotoData(
+    photos: FlickrPhoto[],
+    mode: 'upload' | 'taken' = 'upload'
+  ): ActivityData[] {
     const counts: Record<string, number> = {};
 
     photos.forEach((photo) => {
-      const date = new Date(parseInt(photo.dateupload) * 1000);
-      const dateStr = date.toISOString().split('T')[0];
+      let dateStr = '';
+      if (mode === 'taken') {
+        if (photo.datetaken) {
+          dateStr = photo.datetaken.split(' ')[0] ?? '';
+        } else {
+          const date = new Date(parseInt(photo.dateupload) * 1000);
+          dateStr = date.toISOString().split('T')[0];
+        }
+      } else {
+        const date = new Date(parseInt(photo.dateupload) * 1000);
+        dateStr = date.toISOString().split('T')[0];
+      }
+
+      if (!dateStr) return;
       counts[dateStr] = (counts[dateStr] || 0) + 1;
     });
 
