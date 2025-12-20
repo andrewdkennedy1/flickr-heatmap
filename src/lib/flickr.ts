@@ -48,7 +48,7 @@ export class FlickrService {
     if (this.accessToken && this.accessTokenSecret) {
       try {
         const response = await signedFetch(url, this.accessToken, this.accessTokenSecret);
-        const data = await response.json();
+        const data = await response.json() as any;
 
         if (data.stat === 'fail') {
           throw new Error(data.message);
@@ -63,7 +63,7 @@ export class FlickrService {
 
     // Unauthenticated request
     const response = await fetch(url);
-    const data = await response.json();
+    const data = await response.json() as any;
 
     if (data.stat === 'fail') {
       throw new Error(data.message);
@@ -76,7 +76,7 @@ export class FlickrService {
     try {
       const data = await this.fetchFlickr('flickr.people.findByUsername', {
         username,
-      });
+      }) as any;
       return data.user.nsid;
     } catch {
       // Fallback: try looking up as a URL slug
@@ -85,7 +85,7 @@ export class FlickrService {
   }
 
   async findUserByUrl(url: string): Promise<string> {
-    const data = await this.fetchFlickr('flickr.urls.lookupUser', { url });
+    const data = await this.fetchFlickr('flickr.urls.lookupUser', { url }) as any;
     return data.user.id;
   }
 
@@ -126,7 +126,7 @@ export class FlickrService {
         params.max_taken_date = filters.maxTakenDate;
       }
 
-      const data = await this.fetchFlickr('flickr.people.getPhotos', params);
+      const data = await this.fetchFlickr('flickr.people.getPhotos', params) as any;
 
       if (data.photos?.photo) {
         allPhotos.push(...data.photos.photo);
@@ -173,7 +173,7 @@ export class FlickrService {
       params.max_taken_date = filters.maxTakenDate;
     }
 
-    const data = await this.fetchFlickr('flickr.people.getPhotos', params);
+    const data = await this.fetchFlickr('flickr.people.getPhotos', params) as any;
     const photos = data.photos?.photo ?? [];
     const totalPages = data.photos?.pages ?? 1;
 
@@ -207,15 +207,26 @@ export class FlickrService {
     const maxCount = Math.max(...Object.values(counts), 0);
 
     return Object.entries(counts).map(([date, count]) => {
+      const maxLevel = 7;
       let level = 0;
+
       if (count > 0) {
-        if (maxCount === 1) level = 2;
-        else {
-          const ratio = count / maxCount;
-          if (ratio <= 0.25) level = 1;
-          else if (ratio <= 0.5) level = 2;
-          else if (ratio <= 0.75) level = 3;
-          else level = 4;
+        if (maxCount === 1) {
+          level = maxLevel; // Use max brightness for single photo if it's the only one
+        } else {
+          // Use logarithmic scale to handle wide range of values (1 to 300+)
+          // This ensures low values (1-10) are distinguishable from high values
+          const logCount = Math.log(count);
+          const logMax = Math.log(maxCount);
+
+          // Calculate ratio on log scale
+          const ratio = logCount / logMax;
+
+          // Map to 1-7 range
+          level = Math.ceil(ratio * maxLevel);
+
+          // Ensure at least level 1 if count > 0
+          if (level < 1) level = 1;
         }
       }
 

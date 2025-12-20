@@ -13,8 +13,26 @@ interface HeatmapProps {
 }
 
 const theme: ThemeInput = {
-  light: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
-  dark: ['#0b1120', '#0e4429', '#047857', '#14b8a6', '#34d399'],
+  light: [
+    '#ebedf0', // 0
+    '#f0fff4', // 1
+    '#dcfce7', // 2
+    '#bbf7d0', // 3
+    '#86efac', // 4
+    '#4ade80', // 5
+    '#22c55e', // 6
+    '#16a34a', // 7
+  ],
+  dark: [
+    '#0b1120', // 0: Empty
+    '#064e3b', // 1: Very Dark Emerald
+    '#065f46', // 2: Dark Emerald
+    '#047857', // 3: Emerald
+    '#059669', // 4: Light Emerald
+    '#10b981', // 5
+    '#34d399', // 6
+    '#6ee7b7', // 7: Brightest
+  ],
 };
 
 export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activityLabel, mode }) => {
@@ -26,6 +44,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activ
 
   const totalPhotos = data.reduce((acc, curr) => acc + curr.count, 0);
   const activeDays = data.filter((day) => day.count > 0).length;
+  // ... (keep existing stats logic)
   const peakDay = data.reduce<ActivityData | null>((acc, entry) => {
     if (entry.count <= 0) return acc;
     if (!acc || entry.count > acc.count) return entry;
@@ -193,6 +212,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activ
           <ActivityCalendar
             data={data}
             theme={theme}
+            maxLevel={7}
             colorScheme="dark"
             labels={{ totalCount: `{{count}} ${activityLabel} in ${yearLabel}` }}
             renderBlock={(block, activity) => {
@@ -234,18 +254,28 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activ
             <span className="text-slate-500">Less</span>
             <div className="flex gap-1">
               <div className="h-3 w-3 rounded-sm bg-[#0b1120]"></div>
-              <div className="h-3 w-3 rounded-sm bg-[#0e4429]"></div>
+              <div className="h-3 w-3 rounded-sm bg-[#064e3b]"></div>
+              <div className="h-3 w-3 rounded-sm bg-[#065f46]"></div>
               <div className="h-3 w-3 rounded-sm bg-[#047857]"></div>
-              <div className="h-3 w-3 rounded-sm bg-[#14b8a6]"></div>
+              <div className="h-3 w-3 rounded-sm bg-[#059669]"></div>
+              <div className="h-3 w-3 rounded-sm bg-[#10b981]"></div>
               <div className="h-3 w-3 rounded-sm bg-[#34d399]"></div>
+              <div className="h-3 w-3 rounded-sm bg-[#6ee7b7]"></div>
             </div>
             <span className="text-slate-500">More</span>
           </div>
+
+          <ShareButton
+            username={userId}
+            data={data}
+            year={yearLabel}
+            activityType={activityLabel === 'uploads' ? 'uploaded' : 'taken'}
+          />
+
           {activeDay ? (
             <div className="flex flex-wrap items-center gap-2 text-xs text-emerald-200">
               <span className="font-semibold text-emerald-300">{formatDayLabel(activeDay)}</span>
               <span>· {activeDay.count} photos</span>
-
             </div>
           ) : (
             <p className="text-xs text-slate-500">
@@ -255,5 +285,71 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activ
         </div>
       </div>
     </div>
+  );
+};
+
+const ShareButton: React.FC<{
+  username: string;
+  data: ActivityData[];
+  year: string;
+  activityType: 'uploaded' | 'taken';
+}> = ({ username, data, year, activityType }) => {
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, data, year, activityType }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save snapshot');
+
+      const url = `${window.location.origin}/${username}`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Share failed', error);
+      alert('Failed to generate share link');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShare}
+      disabled={loading}
+      className="ml-auto flex items-center gap-2 rounded-xl bg-slate-800/50 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50"
+    >
+      {loading ? (
+        <span className="animate-pulse">Saving...</span>
+      ) : copied ? (
+        <span className="text-emerald-400">Copied Link!</span>
+      ) : (
+        <>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" x2="12" y1="2" y2="15" />
+          </svg>
+          Share Snapshot
+        </>
+      )}
+    </button>
   );
 };
