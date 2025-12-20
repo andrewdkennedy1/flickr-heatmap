@@ -620,7 +620,6 @@ export default function Home() {
                 {activeData ? (
                   <Heatmap
                     data={activeData}
-                    username={activeUsername}
                     userId={activeUserId}
                     yearLabel={activeYear.toString()}
                     activityLabel={activeLabel}

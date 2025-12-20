@@ -6,7 +6,6 @@ import { ActivityData } from '@/lib/flickr';
 
 interface HeatmapProps {
   data: ActivityData[];
-  username: string;
   userId: string;
   yearLabel: string;
   activityLabel: string;
@@ -18,7 +17,7 @@ const theme: ThemeInput = {
   dark: ['#0b1120', '#0e4429', '#047857', '#14b8a6', '#34d399'],
 };
 
-export const Heatmap: React.FC<HeatmapProps> = ({ data, username, userId, yearLabel, activityLabel, mode }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activityLabel, mode }) => {
   const [activeDay, setActiveDay] = useState<ActivityData | null>(null);
   const holdTimerRef = useRef<number | null>(null);
   const holdActiveRef = useRef(false);
