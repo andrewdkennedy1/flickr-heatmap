@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   deploy:
+    environment: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
