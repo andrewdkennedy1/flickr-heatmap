@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { oauth, getAuthorizeUrl } from '@/lib/oauth';
 
-export async function GET() {
-    return new Promise((resolve) => {
+export async function GET(): Promise<Response> {
+    return new Promise<NextResponse>((resolve) => {
         oauth.getOAuthRequestToken((error: any, oauthToken: string, oauthTokenSecret: string) => {
             if (error) {
                 resolve(NextResponse.json({ error: 'Failed to obtain request token' }, { status: 500 }));
