@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unstable-nested-components */
 'use client';
 
 import React, { useRef, useState } from 'react';
@@ -11,6 +10,7 @@ interface HeatmapProps {
   username: string;
   yearLabel: string;
   activityLabel: string;
+  mode: 'taken' | 'upload';
 }
 
 const theme: ThemeInput = {
@@ -18,7 +18,7 @@ const theme: ThemeInput = {
   dark: ['#0b1120', '#0e4429', '#047857', '#14b8a6', '#34d399'],
 };
 
-export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, activityLabel }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, activityLabel, mode }) => {
   const [activeDay, setActiveDay] = useState<ActivityData | null>(null);
   const holdTimerRef = useRef<number | null>(null);
   const holdActiveRef = useRef(false);
@@ -36,7 +36,8 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
   const buildPhotostreamUrl = (date: string) => {
     const [year, month, day] = date.split('-');
     const trimmedBase = basePhotostreamUrl.replace(/\/+$/, '');
-    return `${trimmedBase}/${year}/${month}/${day}/`;
+    const archiveMode = mode === 'upload' ? 'date-posted' : 'date-taken';
+    return `${trimmedBase}/archives/${archiveMode}/${year}/${month}/${day}/`;
   };
 
   const formatDayLabel = (activity: ActivityData) =>

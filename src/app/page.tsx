@@ -692,7 +692,13 @@ export default function Home() {
                 </div>
               </div>
 
-              <Heatmap data={data} username={username} yearLabel={selectedYear.toString()} activityLabel={PRIMARY_LABEL} />
+              <Heatmap
+                data={data}
+                username={username}
+                yearLabel={selectedYear.toString()}
+                activityLabel={PRIMARY_LABEL}
+                mode="taken"
+              />
 
               {showUpload && (
                 <div className="space-y-3">
@@ -709,6 +715,7 @@ export default function Home() {
                       username={username}
                       yearLabel={selectedYear.toString()}
                       activityLabel={UPLOAD_LABEL}
+                      mode="upload"
                     />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-slate-800/70 bg-slate-900/40 p-6 text-center text-sm text-slate-400">
