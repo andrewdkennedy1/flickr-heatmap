@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FlickrService, ActivityData } from '@/lib/flickr';
+import { ActivityData } from '@/lib/flickr';
 import { Heatmap } from '@/components/Heatmap';
-import { Search, Loader2, Info, Camera, Calendar, AlertCircle } from 'lucide-react';
+import { Search, Loader2, Info, Camera, Calendar, AlertCircle, LogIn, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-import { getCookie } from 'cookies-next'; // We'll need to install cookies-next or just use simple JS for client read
 
 export default function Home() {
   const [username, setUsername] = useState('yoshislens');
@@ -15,18 +13,26 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Simple check for auth cookie
-    const token = document.cookie.split('; ').find(row => row.startsWith('flickr_access_token='));
-    const nsid = document.cookie.split('; ').find(row => row.startsWith('flickr_user_nsid='));
-    const storedUsername = document.cookie.split('; ').find(row => row.startsWith('flickr_username='));
+    // Check for auth cookies (only non-httpOnly ones are readable)
+    const flickrUsername = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('flickr_username='))
+      ?.split('=')[1];
 
-    if (token) {
+    const flickrNsid = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('flickr_user_nsid='));
+
+    if (flickrNsid) {
       setIsAuthenticated(true);
-      if (storedUsername) {
-        setUsername(decodeURIComponent(storedUsername.split('=')[1]));
+      if (flickrUsername) {
+        const decoded = decodeURIComponent(flickrUsername);
+        setAuthenticatedUsername(decoded);
+        setUsername(decoded);
       }
     }
   }, []);
@@ -35,44 +41,44 @@ export default function Home() {
     e?.preventDefault();
     if (!username) return;
 
-    const apiKey = process.env.NEXT_PUBLIC_FLICKR_API_KEY;
-    if (!apiKey) {
-      setError('Flickr API Key is missing in environment variables.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setData(null);
 
     try {
-      const service = new FlickrService(apiKey);
-      let userId = '';
+      // Use API endpoint which handles OAuth server-side
+      const response = await fetch(`/api/photos?username=${encodeURIComponent(username)}`);
+      const result = await response.json();
 
-      if (username.startsWith('http')) {
-        userId = await service.findUserByUrl(username);
-      } else {
-        userId = await service.findUserByUsername(username);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch photos');
       }
 
-      // Fetch photos from the last year
-      const lastYear = new Date();
-      lastYear.setFullYear(lastYear.getFullYear() - 1);
-      const minDate = Math.floor(lastYear.getTime() / 1000).toString();
-
-      const photos = await service.getUserPhotos(userId, minDate);
-      const activityData = FlickrService.aggregatePhotoData(photos);
-
-      if (activityData.length === 0) {
+      if (result.data.length === 0) {
         setError('No photo activity found for this user in the last year.');
       } else {
-        setData(activityData);
+        setData(result.data);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch data. Check the username.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch data';
+      setError(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = () => {
+    window.location.href = '/api/auth/login';
+  };
+
+  const handleLogout = () => {
+    // Clear cookies
+    document.cookie = 'flickr_user_nsid=; path=/; max-age=0';
+    document.cookie = 'flickr_username=; path=/; max-age=0';
+    setIsAuthenticated(false);
+    setAuthenticatedUsername(null);
+    // Reload to clear httpOnly cookies via redirect
+    window.location.href = '/';
   };
 
   const loadDemo = () => {
@@ -82,7 +88,6 @@ export default function Home() {
       const date = new Date();
       date.setDate(now.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      // Randomly assign some activity
       const count = Math.random() > 0.7 ? Math.floor(Math.random() * 10) : 0;
       let level = 0;
       if (count > 0) {
@@ -109,6 +114,32 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+        {/* Auth Status Bar */}
+        <div className="flex justify-end mb-4">
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-emerald-400">
+                ✓ Logged in as {authenticatedUsername}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-slate-800 hover:bg-slate-700 rounded-xl transition-all"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleLogin}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 rounded-xl transition-all"
+            >
+              <LogIn size={16} />
+              Login with Flickr
+            </button>
+          )}
+        </div>
+
         {/* Header */}
         <header className="text-center mb-16">
           <motion.div
@@ -134,7 +165,7 @@ export default function Home() {
             className="text-lg text-slate-400 max-w-2xl mx-auto"
           >
             Visualize your Flickr photo activity with a GitHub-style contribution calendar.
-            Track your creative journey daily.
+            {!isAuthenticated && ' Login to see your private photos too.'}
           </motion.p>
         </header>
 
@@ -152,7 +183,7 @@ export default function Home() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                 <input
                   type="text"
-                  placeholder="e.g. nasa-goddart"
+                  placeholder="e.g. nasa-goddard"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"

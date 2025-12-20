@@ -1,60 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOAuth } from '@/lib/oauth';
+import { getAccessToken } from '@/lib/oauth';
 
 export async function GET(request: NextRequest): Promise<Response> {
-    const searchParams = request.nextUrl.searchParams;
-    const oauthToken = searchParams.get('oauth_token');
-    const oauthVerifier = searchParams.get('oauth_verifier');
-    const oauthTokenSecret = request.cookies.get('oauth_token_secret')?.value;
-
-    if (!oauthToken || !oauthVerifier || !oauthTokenSecret) {
-        return NextResponse.json({ error: 'Missing OAuth parameters' }, { status: 400 });
-    }
-
-    let oauth;
     try {
-        oauth = getOAuth();
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message || 'Missing Flickr API credentials' }, { status: 500 });
-    }
+        const searchParams = request.nextUrl.searchParams;
+        const oauthToken = searchParams.get('oauth_token');
+        const oauthVerifier = searchParams.get('oauth_verifier');
+        const oauthTokenSecret = request.cookies.get('oauth_token_secret')?.value;
 
-    return new Promise<NextResponse>((resolve) => {
-        oauth.getOAuthAccessToken(
+        if (!oauthToken || !oauthVerifier || !oauthTokenSecret) {
+            return NextResponse.json({ error: 'Missing OAuth parameters' }, { status: 400 });
+        }
+
+        const { token, secret, userId, username } = await getAccessToken(
             oauthToken,
             oauthTokenSecret,
-            oauthVerifier,
-            (error: any, accessToken: string, accessTokenSecret: string, results: any) => {
-                if (error) {
-                    console.error('Error getting access token:', error);
-                    resolve(NextResponse.json({ error: 'Failed to obtain access token' }, { status: 500 }));
-                    return;
-                }
-
-                const response = NextResponse.redirect(new URL('/', request.url));
-
-                // Store access token and basic user info
-                response.cookies.set('flickr_access_token', accessToken, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    path: '/',
-                    maxAge: 30 * 24 * 60 * 60 // 30 days
-                });
-
-                response.cookies.set('flickr_access_token_secret', accessTokenSecret, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    path: '/',
-                    maxAge: 30 * 24 * 60 * 60
-                });
-
-                // 'results' usually contains user_nsid and username
-                if (results) {
-                    response.cookies.set('flickr_user_nsid', results.user_nsid as string, { httpOnly: false, path: '/' });
-                    response.cookies.set('flickr_username', results.username as string, { httpOnly: false, path: '/' });
-                }
-
-                resolve(response);
-            }
+            oauthVerifier
         );
-    });
+
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const response = NextResponse.redirect(new URL('/', baseUrl));
+
+        // Store access token and secret
+        response.cookies.set('flickr_access_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60, // 30 days
+            sameSite: 'lax',
+        });
+
+        response.cookies.set('flickr_access_token_secret', secret, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60,
+            sameSite: 'lax',
+        });
+
+        // Store user info (readable by client)
+        if (userId) {
+            response.cookies.set('flickr_user_nsid', userId, {
+                httpOnly: false,
+                path: '/',
+                maxAge: 30 * 24 * 60 * 60,
+                sameSite: 'lax',
+            });
+        }
+
+        if (username) {
+            response.cookies.set('flickr_username', username, {
+                httpOnly: false,
+                path: '/',
+                maxAge: 30 * 24 * 60 * 60,
+                sameSite: 'lax',
+            });
+        }
+
+        // Clear the temporary request token secret
+        response.cookies.delete('oauth_token_secret');
+
+        return response;
+    } catch (error: unknown) {
+        console.error('OAuth callback error:', error);
+        const message = error instanceof Error ? error.message : 'Failed to complete OAuth';
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
 }
