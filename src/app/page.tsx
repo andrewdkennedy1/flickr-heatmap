@@ -156,8 +156,8 @@ export default function Home() {
     const busiestMonthLabel =
       totalPhotos > 0
         ? new Date(Date.UTC(activeYear, busiestMonthIndex, 1)).toLocaleString('en-US', {
-            month: 'short',
-          })
+          month: 'short',
+        })
         : '—';
 
     return { totalPhotos, activeDays, peakCount, peakDate, longestStreak, busiestMonthLabel };
@@ -466,7 +466,7 @@ export default function Home() {
               See your photo days at a glance.
             </h1>
             <p className="max-w-2xl text-lg text-slate-300">
-              Enter a Flickr username and year to generate a heatmap of when photos were taken.
+              Enter a Flickr username and year to generate a heatmap of when photos were taken or uploaded.
             </p>
           </div>
 
@@ -577,11 +577,10 @@ export default function Home() {
                   type="button"
                   onClick={() => handleModeChange('taken')}
                   disabled={loading}
-                  className={`rounded-full px-4 py-2 transition ${
-                    activityMode === 'taken'
+                  className={`rounded-full px-4 py-2 transition ${activityMode === 'taken'
                       ? 'bg-emerald-400/20 text-emerald-100'
                       : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                    }`}
                 >
                   Photos taken
                 </button>
@@ -589,11 +588,10 @@ export default function Home() {
                   type="button"
                   onClick={() => handleModeChange('upload')}
                   disabled={loading}
-                  className={`rounded-full px-4 py-2 transition ${
-                    activityMode === 'upload'
+                  className={`rounded-full px-4 py-2 transition ${activityMode === 'upload'
                       ? 'bg-sky-400/20 text-sky-100'
                       : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                    }`}
                 >
                   Uploads
                 </button>
