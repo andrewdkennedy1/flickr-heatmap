@@ -28,6 +28,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string>('');
 
   const yearOptions = Array.from({ length: currentYear - 2004 + 1 }, (_, index) => currentYear - index);
   const activeData = activityMode === 'taken' ? data : uploadData;
@@ -355,6 +356,7 @@ export default function Home() {
     setLoadingLabel(mode === 'taken' ? 'Loading photos...' : 'Loading uploads...');
     setProgress(0);
 
+    let userId = '';
     do {
       const response = await fetch(
         `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${year}&mode=${mode}&page=${page}&perPage=${perPage}`
@@ -365,6 +367,10 @@ export default function Home() {
         throw new Error(result.error || 'Failed to fetch photos');
       }
 
+      if (page === 1) {
+        userId = result.userId;
+      }
+
       allPhotos.push(...(result.photos ?? []));
       totalPages = result.totalPages ?? 1;
       setProgress(Math.round((page / totalPages) * 100));
@@ -373,7 +379,7 @@ export default function Home() {
 
     const filledData = fillYearData(aggregatePhotos(allPhotos, mode), year);
 
-    return { data: filledData, totalPhotos: allPhotos.length };
+    return { data: filledData, totalPhotos: allPhotos.length, userId };
   };
 
   const handleFetch = async (e?: React.FormEvent) => {
@@ -398,6 +404,7 @@ export default function Home() {
         setError(`No photos taken found for ${selectedYear}. Try a previous year.`);
       }
       setData(takenResult.data);
+      setActiveUserId(takenResult.userId || '');
       setInputUsername(targetUsername);
       setActiveUsername(targetUsername);
       setActiveYear(selectedYear);
@@ -539,7 +546,6 @@ export default function Home() {
           </form>
 
           <div className="space-y-2 text-xs text-slate-500">
-            <p>Example: nasahqphoto</p>
             <p>We only read your Flickr data for this request. No storage or ads.</p>
             <p>Private photos require login to include in results (top right).</p>
           </div>
@@ -578,8 +584,8 @@ export default function Home() {
                   onClick={() => handleModeChange('taken')}
                   disabled={loading}
                   className={`rounded-full px-4 py-2 transition ${activityMode === 'taken'
-                      ? 'bg-emerald-400/20 text-emerald-100'
-                      : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-emerald-400/20 text-emerald-100'
+                    : 'text-slate-400 hover:text-slate-200'
                     }`}
                 >
                   Photos taken
@@ -589,8 +595,8 @@ export default function Home() {
                   onClick={() => handleModeChange('upload')}
                   disabled={loading}
                   className={`rounded-full px-4 py-2 transition ${activityMode === 'upload'
-                      ? 'bg-sky-400/20 text-sky-100'
-                      : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-sky-400/20 text-sky-100'
+                    : 'text-slate-400 hover:text-slate-200'
                     }`}
                 >
                   Uploads
@@ -615,6 +621,7 @@ export default function Home() {
                   <Heatmap
                     data={activeData}
                     username={activeUsername}
+                    userId={activeUserId}
                     yearLabel={activeYear.toString()}
                     activityLabel={activeLabel}
                     mode={activityMode}

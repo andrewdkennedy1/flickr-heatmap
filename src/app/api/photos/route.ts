@@ -89,6 +89,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             return NextResponse.json({
                 success: true,
                 authenticated: !!(accessToken && accessTokenSecret),
+                userId,
                 page,
                 totalPages: result.totalPages,
                 photos: result.photos,
@@ -106,6 +107,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         return NextResponse.json({
             success: true,
             authenticated: !!(accessToken && accessTokenSecret),
+            userId,
             data: activityData,
             totalPhotos: photos.length,
         });

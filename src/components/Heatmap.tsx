@@ -7,6 +7,7 @@ import { ActivityData } from '@/lib/flickr';
 interface HeatmapProps {
   data: ActivityData[];
   username: string;
+  userId: string;
   yearLabel: string;
   activityLabel: string;
   mode: 'taken' | 'upload';
@@ -17,7 +18,7 @@ const theme: ThemeInput = {
   dark: ['#0b1120', '#0e4429', '#047857', '#14b8a6', '#34d399'],
 };
 
-export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, activityLabel, mode }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ data, username, userId, yearLabel, activityLabel, mode }) => {
   const [activeDay, setActiveDay] = useState<ActivityData | null>(null);
   const holdTimerRef = useRef<number | null>(null);
   const holdActiveRef = useRef(false);
@@ -69,15 +70,16 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
   const activeDaysHint = activityLabel === 'uploads' ? 'days with uploads' : 'days with photos';
   const busiestHint = activityLabel === 'uploads' ? 'most uploads' : 'most photos';
 
-  const basePhotostreamUrl = username.startsWith('http')
-    ? username
-    : `https://www.flickr.com/photos/${encodeURIComponent(username)}/`;
+  const buildSearchUrl = (date: string) => {
+    const startOfDay = new Date(`${date}T00:00:00Z`);
+    const endOfDay = new Date(`${date}T23:59:59Z`);
+    const minUnix = Math.floor(startOfDay.getTime() / 1000);
+    const maxUnix = Math.floor(endOfDay.getTime() / 1000);
 
-  const buildPhotostreamUrl = (date: string) => {
-    const [year, month, day] = date.split('-');
-    const trimmedBase = basePhotostreamUrl.replace(/\/+$/, '');
-    const archiveMode = mode === 'upload' ? 'date-posted' : 'date-taken';
-    return `${trimmedBase}/archives/${archiveMode}/${year}/${month}/${day}/`;
+    const sort = mode === 'upload' ? 'date-posted-desc' : 'date-taken-desc';
+    const dateParam = mode === 'upload' ? 'upload_date' : 'taken_date';
+
+    return `https://www.flickr.com/search/?user_id=${encodeURIComponent(userId)}&sort=${sort}&min_${dateParam}=${minUnix}&max_${dateParam}=${maxUnix}&view_all=1`;
   };
 
   const formatDayLabel = (activity: ActivityData) =>
@@ -208,7 +210,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
 
               return (
                 <a
-                  href={buildPhotostreamUrl(activity.date)}
+                  href={buildSearchUrl(activity.date)}
                   target="_blank"
                   rel="noreferrer"
                   aria-label={`View photos from ${activity.date}`}
