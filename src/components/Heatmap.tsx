@@ -4,7 +4,6 @@
 import React, { useRef, useState } from 'react';
 import { ActivityCalendar, ThemeInput } from 'react-activity-calendar';
 import { ActivityData } from '@/lib/flickr';
-import { CalendarRange, Flame, Sparkles } from 'lucide-react';
 
 interface HeatmapProps {
   data: ActivityData[];
@@ -25,9 +24,50 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
   const pointerDownRef = useRef(false);
   const suppressClickRef = useRef(false);
 
-  const totalUploads = data.reduce((acc, curr) => acc + curr.count, 0);
-  const activeDays = data.filter((d) => d.count > 0).length;
-  const peakDayCount = Math.max(...data.map((d) => d.count));
+  const totalPhotos = data.reduce((acc, curr) => acc + curr.count, 0);
+  const activeDays = data.filter((day) => day.count > 0).length;
+  const peakDay = data.reduce<ActivityData | null>((acc, entry) => {
+    if (entry.count <= 0) return acc;
+    if (!acc || entry.count > acc.count) return entry;
+    return acc;
+  }, null);
+  const peakCount = peakDay?.count ?? 0;
+  const peakDate = peakDay?.date ?? null;
+  const longestStreak = data
+    .reduce(
+      (acc, entry) => {
+        if (entry.count > 0) {
+          const current = acc.current + 1;
+          return { current, longest: Math.max(acc.longest, current) };
+        }
+        return { current: 0, longest: acc.longest };
+      },
+      { current: 0, longest: 0 }
+    )
+    .longest;
+
+  const monthTotals = Array.from({ length: 12 }, () => 0);
+  data.forEach((entry) => {
+    const monthIndex = Number.parseInt(entry.date.slice(5, 7), 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      monthTotals[monthIndex] += entry.count;
+    }
+  });
+  const busiestMonthIndex = monthTotals.reduce((best, value, index) => {
+    if (value > monthTotals[best]) return index;
+    return best;
+  }, 0);
+  const yearNumber = Number.parseInt(yearLabel, 10);
+  const monthLabelBaseYear = Number.isFinite(yearNumber) ? yearNumber : new Date().getFullYear();
+  const hasData = totalPhotos > 0;
+  const busiestMonthLabel = hasData
+    ? new Date(Date.UTC(monthLabelBaseYear, busiestMonthIndex, 1)).toLocaleString('en-US', {
+        month: 'short',
+      })
+    : '—';
+  const totalLabel = activityLabel === 'uploads' ? 'Total uploads' : 'Total photos';
+  const activeDaysHint = activityLabel === 'uploads' ? 'days with uploads' : 'days with photos';
+  const busiestHint = activityLabel === 'uploads' ? 'most uploads' : 'most photos';
 
   const basePhotostreamUrl = username.startsWith('http')
     ? username
@@ -97,32 +137,54 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
       <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" aria-hidden />
       <div className="absolute -bottom-20 -left-10 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl" aria-hidden />
 
-      <div className="relative flex flex-col gap-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/70">Activity heatmap</p>
-            <h2 className="text-3xl font-bold text-white text-glow">
-              {username}&apos;s {activityLabel}
-            </h2>
-            <p className="text-sm text-slate-400">Every square below represents a day in {yearLabel}.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 text-sm text-slate-300">
-            <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-2 frosted-border">
-              <Sparkles size={16} className="text-emerald-300" />
-              <span className="font-semibold text-white">{totalUploads.toLocaleString()}</span>
-              <span className="text-slate-400">{activityLabel}</span>
+      <div className="relative flex flex-col gap-5">
+        <div className="space-y-1 text-sm text-slate-400">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Heatmap</p>
+          <p>Every square represents a day in {yearLabel}.</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            {
+              label: totalLabel,
+              value: totalPhotos.toLocaleString(),
+              hint: activityLabel,
+              accent: 'text-emerald-200',
+            },
+            {
+              label: 'Active days',
+              value: activeDays.toLocaleString(),
+              hint: activeDaysHint,
+              accent: 'text-sky-200',
+            },
+            {
+              label: 'Peak count',
+              value: peakCount.toLocaleString(),
+              hint: peakDate ? `Peak date ${peakDate}` : 'No peak yet',
+              accent: 'text-amber-200',
+            },
+            {
+              label: 'Longest streak',
+              value: hasData ? `${longestStreak} days` : '—',
+              hint: 'consecutive days',
+              accent: 'text-teal-200',
+            },
+            {
+              label: 'Busiest month',
+              value: busiestMonthLabel,
+              hint: hasData ? busiestHint : 'No data yet',
+              accent: 'text-rose-200',
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3"
+            >
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{stat.label}</p>
+              <p className={`mt-1 text-2xl font-semibold ${stat.accent}`}>{stat.value}</p>
+              <p className="mt-1 text-xs text-slate-500">{stat.hint}</p>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-blue-500/10 px-3 py-2 frosted-border">
-              <CalendarRange size={16} className="text-blue-300" />
-              <span className="font-semibold text-white">{activeDays}</span>
-              <span className="text-slate-400">active days</span>
-            </div>
-            <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-2 frosted-border">
-              <Flame size={16} className="text-amber-300" />
-              <span className="font-semibold text-white">{peakDayCount}</span>
-              <span className="text-slate-400">peak day</span>
-            </div>
-          </div>
+          ))}
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-slate-800/60 bg-slate-950/40 p-4">
