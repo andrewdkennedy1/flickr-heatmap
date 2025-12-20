@@ -617,6 +617,7 @@ export default function Home() {
                     username={activeUsername}
                     yearLabel={activeYear.toString()}
                     activityLabel={activeLabel}
+                    mode={activityMode}
                   />
                 ) : (
                   <div className="rounded-3xl border border-dashed border-slate-800/70 bg-slate-900/40 p-8 text-center">
