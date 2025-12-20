@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # Custom domain routing - Cloudflare will handle DNS and SSL
 [[routes]]
-pattern = "flickrheatmap.thunderdoges.com/*"
+pattern = "flickrheatmap.thunderdoges.com"
 custom_domain = true
 
 [assets]
