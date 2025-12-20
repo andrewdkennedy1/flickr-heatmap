@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { oauth } from '@/lib/oauth';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<Response> {
     const searchParams = request.nextUrl.searchParams;
     const oauthToken = searchParams.get('oauth_token');
     const oauthVerifier = searchParams.get('oauth_verifier');
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Missing OAuth parameters' }, { status: 400 });
     }
 
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
         oauth.getOAuthAccessToken(
             oauthToken,
             oauthTokenSecret,
