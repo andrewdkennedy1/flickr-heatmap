@@ -88,7 +88,11 @@ export class FlickrService {
     return data.user.id;
   }
 
-  async getUserPhotos(userId: string, minUploadDate?: string): Promise<FlickrPhoto[]> {
+  async getUserPhotos(
+    userId: string,
+    minUploadDate?: string,
+    maxUploadDate?: string
+  ): Promise<FlickrPhoto[]> {
     const allPhotos: FlickrPhoto[] = [];
     let page = 1;
     let totalPages = 1;
@@ -105,6 +109,10 @@ export class FlickrService {
         params.min_upload_date = minUploadDate;
       }
 
+      if (maxUploadDate) {
+        params.max_upload_date = maxUploadDate;
+      }
+
       const data = await this.fetchFlickr('flickr.people.getPhotos', params);
 
       if (data.photos?.photo) {
@@ -113,7 +121,7 @@ export class FlickrService {
       }
 
       page++;
-    } while (page <= totalPages && page <= 10); // Limit to 10 pages
+    } while (page <= totalPages);
 
     return allPhotos;
   }

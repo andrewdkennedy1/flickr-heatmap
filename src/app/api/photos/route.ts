@@ -29,12 +29,32 @@ export async function GET(request: NextRequest): Promise<Response> {
             userId = await service.findUserByUsername(username);
         }
 
-        // Fetch photos from the last year
-        const lastYear = new Date();
-        lastYear.setFullYear(lastYear.getFullYear() - 1);
-        const minDate = Math.floor(lastYear.getTime() / 1000).toString();
+        const yearParam = searchParams.get('year');
+        let minDate: string | undefined;
+        let maxDate: string | undefined;
 
-        const photos = await service.getUserPhotos(userId, minDate);
+        if (yearParam) {
+            const parsedYear = Number.parseInt(yearParam, 10);
+            const currentYear = new Date().getFullYear();
+            if (!Number.isFinite(parsedYear) || parsedYear < 2004 || parsedYear > currentYear) {
+                return NextResponse.json({ error: 'Invalid year' }, { status: 400 });
+            }
+
+            const start = new Date(Date.UTC(parsedYear, 0, 1, 0, 0, 0));
+            const end =
+                parsedYear === currentYear
+                    ? new Date()
+                    : new Date(Date.UTC(parsedYear + 1, 0, 1, 0, 0, 0) - 1);
+
+            minDate = Math.floor(start.getTime() / 1000).toString();
+            maxDate = Math.floor(end.getTime() / 1000).toString();
+        } else {
+            const lastYear = new Date();
+            lastYear.setFullYear(lastYear.getFullYear() - 1);
+            minDate = Math.floor(lastYear.getTime() / 1000).toString();
+        }
+
+        const photos = await service.getUserPhotos(userId, minDate, maxDate);
         const activityData = FlickrService.aggregatePhotoData(photos);
 
         return NextResponse.json({

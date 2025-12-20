@@ -3,17 +3,53 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityData } from '@/lib/flickr';
 import { Heatmap } from '@/components/Heatmap';
-import { Search, Loader2, Info, Camera, Calendar, AlertCircle, LogIn, LogOut } from 'lucide-react';
+import { Search, Info, Camera, Calendar, AlertCircle, LogIn, LogOut, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
+  const currentYear = new Date().getFullYear();
   const [username, setUsername] = useState('yoshislens');
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ActivityData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
+
+  const popularUsers = ['nasahqphoto', 'nasamarshall', 'nasa2explore'];
+  const yearOptions = Array.from({ length: currentYear - 2004 + 1 }, (_, index) => currentYear - index);
+
+  const fillYearData = (input: ActivityData[], year: number) => {
+    const byDate = new Map(input.map((entry) => [entry.date, entry]));
+    const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+    const end =
+      year === currentYear
+        ? new Date()
+        : new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0) - 1);
+    const days: ActivityData[] = [];
+
+    for (let cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const dateStr = cursor.toISOString().split('T')[0];
+      const existing = byDate.get(dateStr);
+      days.push(existing ?? { date: dateStr, count: 0, level: 0 });
+    }
+
+    return days;
+  };
+
+  const longestStreak = data
+    ? data.reduce(
+        (acc, entry) => {
+          if (entry.count > 0) {
+            const current = acc.current + 1;
+            return { current, longest: Math.max(acc.longest, current) };
+          }
+          return { current: 0, longest: acc.longest };
+        },
+        { current: 0, longest: 0 }
+      ).longest
+    : 0;
 
   useEffect(() => {
     setMounted(true);
@@ -37,9 +73,10 @@ export default function Home() {
     }
   }, []);
 
-  const handleFetch = async (e?: React.FormEvent) => {
+  const handleFetch = async (e?: React.FormEvent, selectedUsername?: string) => {
     e?.preventDefault();
-    if (!username) return;
+    const targetUsername = selectedUsername ?? username;
+    if (!targetUsername) return;
 
     setLoading(true);
     setError(null);
@@ -47,18 +84,21 @@ export default function Home() {
 
     try {
       // Use API endpoint which handles OAuth server-side
-      const response = await fetch(`/api/photos?username=${encodeURIComponent(username)}`);
+      const response = await fetch(
+        `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${selectedYear}`
+      );
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to fetch photos');
       }
 
+      const filledData = fillYearData(result.data, selectedYear);
       if (result.data.length === 0) {
-        setError('No photo activity found for this user in the last year.');
-      } else {
-        setData(result.data);
+        setError(`No photo activity found for ${selectedYear}. Try a previous year.`);
       }
+      setData(filledData);
+      setUsername(targetUsername);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(message);
@@ -100,7 +140,13 @@ export default function Home() {
     }
     setData(demoData.sort((a, b) => a.date.localeCompare(b.date)));
     setUsername('DemoUser');
+    setSelectedYear(currentYear);
     setError(null);
+  };
+
+  const handleQuickSelect = (value: string) => {
+    setUsername(value);
+    handleFetch(undefined, value);
   };
 
   if (!mounted) return null;
@@ -183,11 +229,44 @@ export default function Home() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                 <input
                   type="text"
-                  placeholder="e.g. nasa-goddard"
+                  placeholder="e.g. nasahqphoto"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
                 />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-400 ml-1">Year</label>
+              <div className="relative">
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-4 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-slate-400 ml-1">Popular</div>
+              <div className="flex flex-wrap gap-2">
+                {popularUsers.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleQuickSelect(value)}
+                    className="px-3 py-1.5 text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full transition-all"
+                  >
+                    {value}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -197,7 +276,7 @@ export default function Home() {
                 disabled={loading || !username}
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Generate Heatmap'}
+                {loading ? 'Generating…' : 'Generate Heatmap'}
               </button>
               <button
                 type="button"
@@ -207,6 +286,12 @@ export default function Home() {
                 Demo
               </button>
             </div>
+
+            {loading && (
+              <div className="h-2 rounded-full bg-slate-800 overflow-hidden" role="status">
+                <div className="h-full w-2/3 bg-gradient-to-r from-emerald-500 to-teal-400 animate-pulse" />
+              </div>
+            )}
           </form>
 
           <AnimatePresence>
@@ -262,9 +347,18 @@ export default function Home() {
                     {Math.max(...data.map(d => d.count))}
                   </div>
                 </div>
+                <div className="flex-1 bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-3xl">
+                  <div className="flex items-center gap-3 text-slate-400 mb-2">
+                    <Flame size={18} />
+                    <span className="text-sm font-medium">Longest Streak</span>
+                  </div>
+                  <div className="text-4xl font-black text-amber-400">
+                    {longestStreak}
+                  </div>
+                </div>
               </div>
 
-              <Heatmap data={data} username={username} />
+              <Heatmap data={data} username={username} yearLabel={selectedYear.toString()} />
             </motion.div>
           )}
         </AnimatePresence>
