@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📸 Flickr Heatmap
 
-## Getting Started
+<div align="center">
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Cloudflare](https://img.shields.io/badge/Deployed%20on-Cloudflare-orange?logo=cloudflare)
+
+**Visualize your Flickr photography journey with a beautiful GitHub-style contribution heatmap.**
+
+[🌐 **Live Demo**](https://flickrheatmap.thunderdoges.com) • [📖 How It Works](#how-it-works) • [🚀 Getting Started](#getting-started)
+
+</div>
+
+---
+
+## ✨ Features
+
+- 🗓️ **GitHub-Style Heatmap** — See your photo uploads visualized as a year-long contribution calendar
+- 🔍 **Username Search** — Enter any Flickr username to view their upload activity
+- 📊 **Activity Stats** — Track total uploads, active days, and peak upload days
+- 🌙 **Sleek Dark Mode** — Modern glassmorphism UI with smooth Framer Motion animations
+- ⚡ **Edge-Powered** — Deployed on Cloudflare Workers for lightning-fast global performance
+- 🎮 **Demo Mode** — Try it instantly without a Flickr account
+
+## 🎯 Live App
+
+**👉 [flickrheatmap.thunderdoges.com](https://flickrheatmap.thunderdoges.com)**
+
+Enter any Flickr username and watch your photography activity come to life!
+
+## 📸 How It Works
+
+1. **Enter a Flickr username** — The app accepts usernames or profile URLs
+2. **Fetch photo data** — We call the Flickr API to retrieve upload timestamps from the last year
+3. **Aggregate & visualize** — Photo uploads are aggregated by day and rendered as an interactive heatmap
+4. **Explore your insights** — See your total uploads, most active days, and peak photography sessions
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **Next.js 16** | React framework with App Router |
+| **React 19** | UI library |
+| **TypeScript** | Type-safe development |
+| **Tailwind CSS 4** | Utility-first styling |
+| **Framer Motion** | Smooth animations |
+| **react-activity-calendar** | Heatmap visualization |
+| **Flickr API** | Photo data source |
+| **Cloudflare Workers** | Edge deployment |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- A [Flickr API Key](https://www.flickr.com/services/api/misc.api_keys.html)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/flickr-heatmap.git
+cd flickr-heatmap
+
+# Install dependencies
+npm install
+
+# Create environment file
+cp .env.example .env.local
+```
+
+### Configuration
+
+Add your Flickr API key to `.env.local`:
+
+```env
+NEXT_PUBLIC_FLICKR_API_KEY=your_flickr_api_key_here
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## ☁️ Deployment
 
-To learn more about Next.js, take a look at the following resources:
+This project is deployed on **Cloudflare Workers** using [OpenNext](https://opennextjs.org/).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# Login to Cloudflare
+npx wrangler login
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Build and deploy
+npm run worker:build
+npm run worker:deploy
+```
 
-## Deploy on Vercel
+See [CLOUDFLARE_DEPLOY.md](./CLOUDFLARE_DEPLOY.md) for detailed deployment instructions.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📂 Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+flickr-heatmap/
+├── src/
+│   ├── app/
+│   │   ├── api/           # API routes
+│   │   ├── page.tsx       # Main page component
+│   │   ├── layout.tsx     # Root layout
+│   │   └── globals.css    # Global styles
+│   ├── components/
+│   │   └── Heatmap.tsx    # Heatmap visualization component
+│   └── lib/
+│       ├── flickr.ts      # Flickr API service
+│       └── oauth.ts       # OAuth utilities
+├── public/                # Static assets
+├── wrangler.toml          # Cloudflare Workers config
+└── package.json
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+## 📄 License
+
+MIT License — feel free to use this project for your own photography tracking!
+
+---
+
+<div align="center">
+
+**Made with ❤️ and 📷 by [ThunderDoges](https://thunderdoges.com)**
+
+*Track your photography. Visualize your creativity.*
+
+</div>
