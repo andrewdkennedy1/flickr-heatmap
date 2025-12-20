@@ -62,8 +62,8 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
   const hasData = totalPhotos > 0;
   const busiestMonthLabel = hasData
     ? new Date(Date.UTC(monthLabelBaseYear, busiestMonthIndex, 1)).toLocaleString('en-US', {
-        month: 'short',
-      })
+      month: 'short',
+    })
     : '—';
   const totalLabel = activityLabel === 'uploads' ? 'Total uploads' : 'Total photos';
   const activeDaysHint = activityLabel === 'uploads' ? 'days with uploads' : 'days with photos';
@@ -243,14 +243,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel, act
             <div className="flex flex-wrap items-center gap-2 text-xs text-emerald-200">
               <span className="font-semibold text-emerald-300">{formatDayLabel(activeDay)}</span>
               <span>· {activeDay.count} photos</span>
-              <a
-                href={buildPhotostreamUrl(activeDay.date)}
-                target="_blank"
-                rel="noreferrer"
-                className="text-emerald-300 underline underline-offset-2 hover:text-emerald-200"
-              >
-                Open photostream
-              </a>
+
             </div>
           ) : (
             <p className="text-xs text-slate-500">

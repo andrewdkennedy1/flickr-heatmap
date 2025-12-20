@@ -24,6 +24,7 @@ export default function Home() {
   const [uploadData, setUploadData] = useState<ActivityData[] | null>(null);
   const [activityMode, setActivityMode] = useState<ActivityMode>('taken');
   const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authenticatedUsername, setAuthenticatedUsername] = useState<string | null>(null);
@@ -386,6 +387,7 @@ export default function Home() {
     setLoading(true);
     setLoadingLabel('');
     setError(null);
+    setUploadError(null);
     setData(null);
     setUploadData(null);
     setActivityMode('taken');
@@ -399,6 +401,14 @@ export default function Home() {
       setInputUsername(targetUsername);
       setActiveUsername(targetUsername);
       setActiveYear(selectedYear);
+
+      try {
+        const uploadResult = await fetchActivity('upload', targetUsername, selectedYear);
+        setUploadData(uploadResult.data);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch upload activity';
+        setUploadError(message);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to fetch data';
       setError(message);
@@ -409,27 +419,9 @@ export default function Home() {
     }
   };
 
-  const handleModeChange = async (mode: ActivityMode) => {
+  const handleModeChange = (mode: ActivityMode) => {
     if (mode === activityMode) return;
     setActivityMode(mode);
-
-    if (mode === 'upload' && !uploadData && activeUsername) {
-      setLoading(true);
-      setLoadingLabel('');
-      setError(null);
-
-      try {
-        const uploadResult = await fetchActivity('upload', activeUsername, activeYear);
-        setUploadData(uploadResult.data);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch data';
-        setError(message);
-      } finally {
-        setLoading(false);
-        setProgress(0);
-        setLoadingLabel('');
-      }
-    }
   };
 
   if (!mounted) return null;
@@ -633,7 +625,9 @@ export default function Home() {
                     <p className="mx-auto max-w-2xl text-base text-slate-300">
                       {loading
                         ? 'Loading upload activity...'
-                        : 'Upload activity will appear here once loaded.'}
+                        : uploadError
+                          ? `Uploads unavailable: ${uploadError}`
+                          : 'Upload activity will appear here once loaded.'}
                     </p>
                   </div>
                 )}
