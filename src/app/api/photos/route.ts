@@ -54,6 +54,29 @@ export async function GET(request: NextRequest): Promise<Response> {
             minDate = Math.floor(lastYear.getTime() / 1000).toString();
         }
 
+        const pageParam = searchParams.get('page');
+        const perPageParam = searchParams.get('perPage');
+
+        if (pageParam) {
+            const page = Number.parseInt(pageParam, 10);
+            const perPage = perPageParam ? Number.parseInt(perPageParam, 10) : 500;
+
+            if (!Number.isFinite(page) || page < 1) {
+                return NextResponse.json({ error: 'Invalid page' }, { status: 400 });
+            }
+
+            const safePerPage = Number.isFinite(perPage) && perPage > 0 ? Math.min(perPage, 500) : 500;
+            const result = await service.getUserPhotosPage(userId, page, safePerPage, minDate, maxDate);
+
+            return NextResponse.json({
+                success: true,
+                authenticated: !!(accessToken && accessTokenSecret),
+                page,
+                totalPages: result.totalPages,
+                photos: result.photos,
+            });
+        }
+
         const photos = await service.getUserPhotos(userId, minDate, maxDate);
         const activityData = FlickrService.aggregatePhotoData(photos);
 

@@ -126,6 +126,35 @@ export class FlickrService {
     return allPhotos;
   }
 
+  async getUserPhotosPage(
+    userId: string,
+    page: number,
+    perPage: number,
+    minUploadDate?: string,
+    maxUploadDate?: string
+  ): Promise<{ photos: FlickrPhoto[]; totalPages: number }> {
+    const params: Record<string, string> = {
+      user_id: userId,
+      extras: 'date_upload',
+      per_page: perPage.toString(),
+      page: page.toString(),
+    };
+
+    if (minUploadDate) {
+      params.min_upload_date = minUploadDate;
+    }
+
+    if (maxUploadDate) {
+      params.max_upload_date = maxUploadDate;
+    }
+
+    const data = await this.fetchFlickr('flickr.people.getPhotos', params);
+    const photos = data.photos?.photo ?? [];
+    const totalPages = data.photos?.pages ?? 1;
+
+    return { photos, totalPages };
+  }
+
   static aggregatePhotoData(photos: FlickrPhoto[]): ActivityData[] {
     const counts: Record<string, number> = {};
 

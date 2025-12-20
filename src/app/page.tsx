@@ -26,6 +26,7 @@ export default function Home() {
   const [username, setUsername] = useState('yoshislens');
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [data, setData] = useState<ActivityData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -51,6 +52,34 @@ export default function Home() {
     }
 
     return days;
+  };
+
+  const aggregatePhotos = (photos: Array<{ dateupload: string }>): ActivityData[] => {
+    const counts: Record<string, number> = {};
+
+    photos.forEach((photo) => {
+      const date = new Date(Number.parseInt(photo.dateupload, 10) * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      counts[dateStr] = (counts[dateStr] || 0) + 1;
+    });
+
+    const maxCount = Math.max(...Object.values(counts), 0);
+
+    return Object.entries(counts).map(([date, count]) => {
+      let level = 0;
+      if (count > 0) {
+        if (maxCount === 1) level = 2;
+        else {
+          const ratio = count / maxCount;
+          if (ratio <= 0.25) level = 1;
+          else if (ratio <= 0.5) level = 2;
+          else if (ratio <= 0.75) level = 3;
+          else level = 4;
+        }
+      }
+
+      return { date, count, level };
+    });
   };
 
   useEffect(() => {
@@ -109,21 +138,34 @@ export default function Home() {
     if (!targetUsername) return;
 
     setLoading(true);
+    setProgress(0);
     setError(null);
     setData(null);
 
     try {
-      const response = await fetch(
-        `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${selectedYear}`
-      );
-      const result = await response.json();
+      const perPage = 500;
+      let page = 1;
+      let totalPages = 1;
+      const allPhotos: Array<{ dateupload: string }> = [];
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch photos');
-      }
+      do {
+        const response = await fetch(
+          `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${selectedYear}&page=${page}&perPage=${perPage}`
+        );
+        const result = await response.json();
 
-      const filledData = fillYearData(result.data, selectedYear);
-      if (result.data.length === 0) {
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch photos');
+        }
+
+        allPhotos.push(...(result.photos ?? []));
+        totalPages = result.totalPages ?? 1;
+        setProgress(Math.round((page / totalPages) * 100));
+        page += 1;
+      } while (page <= totalPages);
+
+      const filledData = fillYearData(aggregatePhotos(allPhotos), selectedYear);
+      if (allPhotos.length === 0) {
         setError(`No photo activity found for ${selectedYear}. Try a previous year.`);
       }
       setData(filledData);
@@ -133,6 +175,7 @@ export default function Home() {
       setError(message);
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
 
@@ -354,8 +397,17 @@ export default function Home() {
               </div>
 
               {loading && (
-                <div className="h-2 overflow-hidden rounded-full bg-slate-800/80" role="status" aria-live="polite">
-                  <div className="h-full w-2/3 animate-pulse bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Loading photos…</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-800/80" role="status" aria-live="polite">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                 </div>
               )}
 

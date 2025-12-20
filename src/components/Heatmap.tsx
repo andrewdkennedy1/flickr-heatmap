@@ -33,8 +33,9 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username, yearLabel }) =
     : `https://www.flickr.com/photos/${encodeURIComponent(username)}/`;
 
   const buildPhotostreamUrl = (date: string) => {
-    const separator = basePhotostreamUrl.includes('?') ? '&' : '?';
-    return `${basePhotostreamUrl}${separator}date=${date}`;
+    const [year, month, day] = date.split('-');
+    const trimmedBase = basePhotostreamUrl.replace(/\/+$/, '');
+    return `${trimmedBase}/${year}/${month}/${day}/`;
   };
 
   const formatDayLabel = (activity: ActivityData) =>
