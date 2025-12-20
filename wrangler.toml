@@ -2,9 +2,10 @@ name = "flickr-heatmap"
 main = ".open-next/worker.js"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "789fa1dfebe74fa42b413bdabcf303fb"
+
+routes = ["flickrheatmap.thunderdoges.com/*"]
 
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
-
-routes = ["flickrheatmap.thunderdoges.com/*"]
