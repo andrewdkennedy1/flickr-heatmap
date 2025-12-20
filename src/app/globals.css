@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020617;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #e2e8f0;
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
+  background: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.08), transparent 25%),
+    radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.08), transparent 20%),
+    radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.12), transparent 30%),
+    #020617;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-grid {
+  background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black, transparent 60%);
+}
+
+.card-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 30%),
+    radial-gradient(circle at 80% 30%, rgba(59, 130, 246, 0.12), transparent 30%);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
+  filter: blur(30px);
+}
+
+.card-glow:hover::after {
+  opacity: 1;
+}
+
+.glass-surface {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(15, 23, 42, 0.8));
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
+}
+
+.text-glow {
+  text-shadow: 0 10px 40px rgba(52, 211, 153, 0.35);
+}
+
+.frosted-border {
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
