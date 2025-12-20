@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FlickrService, ActivityData } from '@/lib/flickr';
+import { FlickrService } from '@/lib/flickr';
 
 export async function GET(request: NextRequest): Promise<Response> {
     try {

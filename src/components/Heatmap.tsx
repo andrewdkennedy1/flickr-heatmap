@@ -18,7 +18,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, username }) => {
     return (
         <div className="flex flex-col items-center justify-center p-8 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl animate-in fade-in transition-all duration-500">
             <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-green-400 to-emerald-600 bg-clip-text text-transparent">
-                {username}'s Flickr Activity
+                {`${username}'s Flickr Activity`}
             </h2>
             <div className="overflow-x-auto w-full flex justify-center py-4">
                 <ActivityCalendar
