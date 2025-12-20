@@ -19,7 +19,7 @@ export interface ActivityData {
 
 const FLICKR_API_URL = 'https://www.flickr.com/services/rest/';
 
-import { oauth } from './oauth';
+import { getOAuth } from './oauth';
 
 export class FlickrService {
   private apiKey: string;
@@ -37,6 +37,13 @@ export class FlickrService {
 
     // If we have tokens, use the oauth lib to sign the request
     if (this.accessToken && this.accessTokenSecret) {
+      let oauth;
+      try {
+        oauth = getOAuth();
+      } catch (error: any) {
+        throw new Error(error?.message || 'Missing Flickr API credentials');
+      }
+
       return new Promise((resolve, reject) => {
         oauth.get(
           url,

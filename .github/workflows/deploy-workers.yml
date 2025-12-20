@@ -27,7 +27,22 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build
+        env:
+          NEXT_PUBLIC_FLICKR_API_KEY: ${{ secrets.NEXT_PUBLIC_FLICKR_API_KEY }}
         run: npm run worker:build
+
+      - name: Sync Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FLICKR_API_SECRET: ${{ secrets.FLICKR_API_SECRET }}
+          NEXT_PUBLIC_FLICKR_API_KEY: ${{ secrets.NEXT_PUBLIC_FLICKR_API_KEY }}
+        run: |
+          if [ -n "$FLICKR_API_SECRET" ]; then
+            printf "%s" "$FLICKR_API_SECRET" | npx wrangler secret put FLICKR_API_SECRET
+          fi
+          if [ -n "$NEXT_PUBLIC_FLICKR_API_KEY" ]; then
+            printf "%s" "$NEXT_PUBLIC_FLICKR_API_KEY" | npx wrangler secret put NEXT_PUBLIC_FLICKR_API_KEY
+          fi
 
       - name: Deploy
         env:

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { oauth } from '@/lib/oauth';
+import { getOAuth } from '@/lib/oauth';
 
 export async function GET(request: NextRequest): Promise<Response> {
     const searchParams = request.nextUrl.searchParams;
@@ -9,6 +9,13 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     if (!oauthToken || !oauthVerifier || !oauthTokenSecret) {
         return NextResponse.json({ error: 'Missing OAuth parameters' }, { status: 400 });
+    }
+
+    let oauth;
+    try {
+        oauth = getOAuth();
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || 'Missing Flickr API credentials' }, { status: 500 });
     }
 
     return new Promise<NextResponse>((resolve) => {

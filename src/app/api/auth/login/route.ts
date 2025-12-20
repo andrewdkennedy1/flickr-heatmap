@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
-import { oauth, getAuthorizeUrl } from '@/lib/oauth';
+import { getOAuth, getAuthorizeUrl } from '@/lib/oauth';
 
 export async function GET(): Promise<Response> {
+    let oauth;
+    try {
+        oauth = getOAuth();
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message || 'Missing Flickr API credentials' }, { status: 500 });
+    }
+
     return new Promise<NextResponse>((resolve) => {
         oauth.getOAuthRequestToken((error: any, oauthToken: string, oauthTokenSecret: string) => {
             if (error) {
