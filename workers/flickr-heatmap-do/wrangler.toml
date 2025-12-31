@@ -9,4 +9,4 @@ class_name = "HeatmapSnapshot"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["HeatmapSnapshot"]
+new_sqlite_classes = ["HeatmapSnapshot"]

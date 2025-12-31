@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "worker:build": "next build && opennextjs-cloudflare build",
-    "worker:deploy": "opennextjs-cloudflare deploy"
+    "worker:deploy": "opennextjs-cloudflare deploy",
+    "deploy:do": "cd workers/flickr-heatmap-do && npx wrangler deploy"
   },
   "dependencies": {
     "date-fns": "^4.1.0",
