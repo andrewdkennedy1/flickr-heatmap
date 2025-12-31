@@ -132,7 +132,7 @@ export default function BrowsePage() {
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
                     >
-/* eslint-disable @next/next/no-img-element */
+                        {/* eslint-disable @next/next/no-img-element */}
                         <img
                             src={userInfo.avatar}
                             alt={userInfo.username}
