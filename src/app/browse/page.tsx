@@ -7,28 +7,21 @@ import { Map, Calendar, Search, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function BrowsePage() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [username, setUsername] = useState('');
     const [inputUsername, setInputUsername] = useState('');
-    const [userInfo, setUserInfo] = useState<any>(null);
+    const [userInfo, setUserInfo] = useState<{
+        userId: string;
+        username: string;
+        realname: string;
+        earliestDate: string | null;
+        avatar: string;
+    } | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-        setMounted(true);
-        const flickrUsername = document.cookie
-            .split('; ')
-            .find((row) => row.startsWith('flickr_username='))
-            ?.split('=')[1];
-
-        if (flickrUsername) {
-            const decoded = decodeURIComponent(flickrUsername);
-            setInputUsername(decoded);
-            handleSearch(null, decoded);
-        }
-    }, []);
-
-    const handleSearch = async (e?: React.FormEvent, overrideUsername?: string) => {
+    const handleSearch = React.useCallback(async (e?: React.FormEvent, overrideUsername?: string) => {
         e?.preventDefault();
         const target = (overrideUsername || inputUsername).trim();
         if (!target) return;
@@ -43,13 +36,28 @@ export default function BrowsePage() {
 
             setUserInfo(data);
             setUsername(data.username);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to find user';
+            setError(message);
             setUserInfo(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [inputUsername]);
+
+    useEffect(() => {
+        setMounted(true);
+        const flickrUsername = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('flickr_username='))
+            ?.split('=')[1];
+
+        if (flickrUsername) {
+            const decoded = decodeURIComponent(flickrUsername);
+            setInputUsername(decoded);
+            handleSearch(null, decoded);
+        }
+    }, [handleSearch]);
 
     if (!mounted) return null;
 
@@ -123,6 +131,7 @@ export default function BrowsePage() {
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
                     >
+/* eslint-disable @next/next/no-img-element */
                         <img
                             src={userInfo.avatar}
                             alt={userInfo.username}

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Heatmap } from '@/components/Heatmap';
 import { ActivityData } from '@/lib/flickr';
+import Link from 'next/link';
 
 interface PageProps {
     params: Promise<{
@@ -81,12 +82,12 @@ export default async function SharedHeatmapPage({ params }: PageProps) {
                 />
 
                 <div className="text-center">
-                    <a
+                    <Link
                         href="/"
                         className="inline-flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
                         ← Create your own heatmap
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

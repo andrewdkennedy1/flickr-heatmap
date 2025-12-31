@@ -3,10 +3,6 @@ import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-interface Env {
-    SNAPSHOT_SERVICE: Fetcher;
-}
-
 export async function POST(request: Request) {
     try {
         const { username, data, year, activityType } = await request.json();
