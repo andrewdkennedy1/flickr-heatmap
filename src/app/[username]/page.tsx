@@ -1,9 +1,11 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { Heatmap } from '@/components/Heatmap';
 import { ActivityData } from '@/lib/flickr';
 import Link from 'next/link';
+import { headers } from 'next/headers';
+
+export const runtime = 'nodejs';
 
 interface PageProps {
     params: Promise<{
@@ -19,21 +21,23 @@ interface SnapshotData {
     timestamp: number;
 }
 
-
 async function getSnapshot(username: string): Promise<SnapshotData | null> {
-    const { env } = await getCloudflareContext();
-
-    if (!env.SNAPSHOT_SERVICE) {
-        console.error("SNAPSHOT_SERVICE binding not found");
-        return null;
-    }
-
     try {
-        const response = await env.SNAPSHOT_SERVICE.fetch(
-            `http://internal/${username}`,
+        const headersList = await headers();
+        const host = headersList.get('host');
+        const protocol = headersList.get('x-forwarded-proto') || 'http';
+
+        if (!host) {
+            console.error("Host header missing");
+            return null;
+        }
+
+        const response = await fetch(
+            `${protocol}://${host}/api/snapshot?username=${encodeURIComponent(username)}`,
             {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
+                cache: 'no-store'
             }
         );
 
