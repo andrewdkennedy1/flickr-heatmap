@@ -89,6 +89,67 @@ export class FlickrService {
     return data.user.id;
   }
 
+  async getUserInfo(userId: string): Promise<any> {
+    const data = await this.fetchFlickr('flickr.people.getInfo', { user_id: userId }) as any;
+    return data.person;
+  }
+
+  async getEarliestPhotoDate(userId: string): Promise<string | null> {
+    try {
+      const person = await this.getUserInfo(userId);
+      // firstdatetaken is in 'YYYY-MM-DD HH:MM:SS' format or empty
+      if (person.photos?.firstdatetaken?._content) {
+        return person.photos.firstdatetaken._content;
+      }
+      // Fallback to firstdate (upload date Unix timestamp)
+      if (person.photos?.firstdate?._content) {
+        const date = new Date(parseInt(person.photos.firstdate._content) * 1000);
+        return date.toISOString();
+      }
+      return null;
+    } catch (error) {
+      console.error('[FlickrService] Failed to get user info:', error);
+      return null;
+    }
+  }
+
+  async getMonthlyCounts(
+    userId: string,
+    year: number,
+    mode: 'taken' | 'upload' = 'taken'
+  ): Promise<number[]> {
+    const months = Array.from({ length: 12 }, (_, i) => i);
+    const counts = await Promise.all(
+      months.map(async (monthIndex) => {
+        const startOfMonth = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
+        const endOfMonth = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0) - 1000);
+
+        const params: Record<string, string> = {
+          user_id: userId,
+          per_page: '1', // We only care about the 'total' field
+          page: '1',
+        };
+
+        if (mode === 'taken') {
+          params.min_taken_date = Math.floor(startOfMonth.getTime() / 1000).toString();
+          params.max_taken_date = Math.floor(endOfMonth.getTime() / 1000).toString();
+        } else {
+          params.min_upload_date = Math.floor(startOfMonth.getTime() / 1000).toString();
+          params.max_upload_date = Math.floor(endOfMonth.getTime() / 1000).toString();
+        }
+
+        try {
+          const data = await this.fetchFlickr('flickr.photos.search', params) as any;
+          return parseInt(data.photos?.total ?? '0', 10);
+        } catch (error) {
+          console.error(`[FlickrService] Failed to get counts for ${year}-${monthIndex + 1}:`, error);
+          return 0;
+        }
+      })
+    );
+    return counts;
+  }
+
   async getUserPhotos(
     userId: string,
     filters: {

@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityData } from '@/lib/flickr';
 import { Heatmap } from '@/components/Heatmap';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Map, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 const TAKEN_LABEL = 'photos taken';
 const UPLOAD_LABEL = 'uploads';
@@ -460,6 +462,17 @@ export default function Home() {
               Log in with Flickr
             </button>
           )}
+          <div className="ml-4 flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/50 p-1">
+            <div className="flex items-center gap-2 rounded-full bg-emerald-500/20 px-4 py-1.5 text-xs font-medium text-emerald-100">
+              <Map size={14} /> Heatmap
+            </div>
+            <Link
+              href="/browse"
+              className="flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-slate-400 transition hover:text-slate-200"
+            >
+              <Calendar size={14} /> Browse
+            </Link>
+          </div>
         </div>
         <motion.section
           initial={{ opacity: 0, y: 16 }}
