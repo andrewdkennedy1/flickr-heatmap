@@ -19,7 +19,6 @@ interface SnapshotData {
     timestamp: number;
 }
 
-export const runtime = 'edge';
 
 async function getSnapshot(username: string): Promise<SnapshotData | null> {
     const { env } = await getCloudflareContext();
