@@ -31,7 +31,8 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ userId, earlie
             setLoading(true);
             try {
                 const response = await fetch(`/api/user/activity?userId=${userId}&year=${selectedYear}`);
-                const data = await response.json();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const data = await response.json() as any;
                 if (data.success) {
                     setMonthlyCounts(data.counts);
                 }
@@ -131,8 +132,8 @@ export const MonthlyCalendar: React.FC<MonthlyCalendarProps> = ({ userId, earlie
                                 target="_blank"
                                 rel="noreferrer"
                                 className={`group relative overflow-hidden rounded-2xl border p-6 transition-all ${disabled
-                                        ? 'border-slate-900 bg-slate-950/20 opacity-40 cursor-not-allowed grayscale'
-                                        : 'border-slate-800 bg-slate-900/40 hover:border-emerald-500/50 hover:bg-emerald-500/5'
+                                    ? 'border-slate-900 bg-slate-950/20 opacity-40 cursor-not-allowed grayscale'
+                                    : 'border-slate-800 bg-slate-900/40 hover:border-emerald-500/50 hover:bg-emerald-500/5'
                                     }`}
                             >
                                 <div className="flex flex-col gap-1">
