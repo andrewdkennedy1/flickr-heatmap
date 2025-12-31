@@ -48,6 +48,7 @@ export class FlickrService {
     if (this.accessToken && this.accessTokenSecret) {
       try {
         const response = await signedFetch(url, this.accessToken, this.accessTokenSecret);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = await response.json() as any;
 
         if (data.stat === 'fail') {
@@ -63,6 +64,7 @@ export class FlickrService {
 
     // Unauthenticated request
     const response = await fetch(url);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
 
     if (data.stat === 'fail') {
@@ -74,6 +76,7 @@ export class FlickrService {
 
   async findUserByUsername(username: string): Promise<string> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await this.fetchFlickr('flickr.people.findByUsername', {
         username,
       }) as any;
@@ -85,11 +88,14 @@ export class FlickrService {
   }
 
   async findUserByUrl(url: string): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await this.fetchFlickr('flickr.urls.lookupUser', { url }) as any;
     return data.user.id;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getUserInfo(userId: string): Promise<any> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await this.fetchFlickr('flickr.people.getInfo', { user_id: userId }) as any;
     return data.person;
   }
@@ -139,6 +145,7 @@ export class FlickrService {
         }
 
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const data = await this.fetchFlickr('flickr.photos.search', params) as any;
           return parseInt(data.photos?.total ?? '0', 10);
         } catch (error) {
@@ -187,6 +194,7 @@ export class FlickrService {
         params.max_taken_date = filters.maxTakenDate;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await this.fetchFlickr('flickr.people.getPhotos', params) as any;
 
       if (data.photos?.photo) {
@@ -234,6 +242,7 @@ export class FlickrService {
       params.max_taken_date = filters.maxTakenDate;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await this.fetchFlickr('flickr.people.getPhotos', params) as any;
     const photos = data.photos?.photo ?? [];
     const totalPages = data.photos?.pages ?? 1;

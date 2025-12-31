@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityData } from '@/lib/flickr';
 import { Heatmap } from '@/components/Heatmap';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map, Calendar } from 'lucide-react';
+import { Map as MapIcon, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 const TAKEN_LABEL = 'photos taken';
@@ -363,7 +363,8 @@ export default function Home() {
       const response = await fetch(
         `/api/photos?username=${encodeURIComponent(targetUsername)}&year=${year}&mode=${mode}&page=${page}&perPage=${perPage}`
       );
-      const result = await response.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await response.json() as any;
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to fetch photos');
@@ -464,7 +465,7 @@ export default function Home() {
           )}
           <div className="ml-4 flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/50 p-1">
             <div className="flex items-center gap-2 rounded-full bg-emerald-500/20 px-4 py-1.5 text-xs font-medium text-emerald-100">
-              <Map size={14} /> Heatmap
+              <MapIcon size={14} /> Heatmap
             </div>
             <Link
               href="/browse"

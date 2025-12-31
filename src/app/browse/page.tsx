@@ -30,7 +30,8 @@ export default function BrowsePage() {
         setError(null);
         try {
             const response = await fetch(`/api/user?username=${encodeURIComponent(target)}`);
-            const data = await response.json();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const data = await response.json() as any;
 
             if (!response.ok) throw new Error(data.error || 'Failed to find user');
 
@@ -55,7 +56,7 @@ export default function BrowsePage() {
         if (flickrUsername) {
             const decoded = decodeURIComponent(flickrUsername);
             setInputUsername(decoded);
-            handleSearch(null, decoded);
+            handleSearch(undefined, decoded);
         }
     }, [handleSearch]);
 
