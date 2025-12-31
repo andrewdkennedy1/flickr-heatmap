@@ -5,7 +5,8 @@ export const runtime = "edge";
 
 export async function POST(request: Request) {
     try {
-        const { username, data, year, activityType } = await request.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { username, data, year, activityType } = await request.json() as any;
 
         if (!username || !data) {
             return NextResponse.json(
