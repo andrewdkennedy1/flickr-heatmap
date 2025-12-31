@@ -76,10 +76,9 @@ export class FlickrService {
 
   async findUserByUsername(username: string): Promise<string> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await this.fetchFlickr('flickr.people.findByUsername', {
         username,
-      }) as any;
+      });
       return data.user.nsid;
     } catch {
       // Fallback: try looking up as a URL slug

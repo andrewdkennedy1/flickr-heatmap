@@ -10,8 +10,6 @@ export class HeatmapSnapshot extends DurableObject {
     }
 
     async fetch(request: Request): Promise<Response> {
-        const url = new URL(request.url);
-
         // PUT /:username - Store snapshot
         if (request.method === "PUT") {
             const data = await request.json();
@@ -39,8 +37,8 @@ export class HeatmapSnapshot extends DurableObject {
     }
 }
 
-export default {
-    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+const worker = {
+    async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
         const pathParts = url.pathname.split("/").filter(Boolean);
 
@@ -59,3 +57,5 @@ export default {
         return stub.fetch(request);
     },
 };
+
+export default worker;
