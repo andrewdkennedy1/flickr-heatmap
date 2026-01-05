@@ -48,8 +48,8 @@ export async function GET(request: NextRequest): Promise<Response> {
                 const startDate = `${parsedYear}-01-01`;
                 const endDate =
                     parsedYear === currentYear
-                        ? new Date().toISOString().split('T')[0]
-                        : `${parsedYear}-12-31`;
+                        ? `${new Date().toISOString().split('T')[0]} 23:59:59`
+                        : `${parsedYear}-12-31 23:59:59`;
                 minTakenDate = startDate;
                 maxTakenDate = endDate;
             } else {
