@@ -100,12 +100,14 @@ export const Heatmap: React.FC<HeatmapProps> = ({ data, userId, yearLabel, activ
     return `https://www.flickr.com/search/?user_id=${encodeURIComponent(userId)}&sort=${sort}&min_${dateParam}=${minUnix}&max_${dateParam}=${maxUnix}&view_all=1`;
   };
 
-  const formatDayLabel = (activity: ActivityData) =>
-    new Date(activity.date).toLocaleDateString('en-US', {
+  const formatDayLabel = (activity: ActivityData) => {
+    const [year, month, day] = activity.date.split('-').map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
+  };
 
   const clearHoldTimer = () => {
     if (holdTimerRef.current) {
