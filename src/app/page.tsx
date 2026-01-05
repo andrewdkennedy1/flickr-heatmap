@@ -39,16 +39,22 @@ export default function Home() {
   const fillYearData = (input: ActivityData[], year: number) => {
     const byDate = new Map(input.map((entry) => [entry.date, entry]));
     const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-    const end =
-      year === currentYear
-        ? new Date()
-        : new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0) - 1);
     const days: ActivityData[] = [];
 
-    for (let cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    const cursor = new Date(start);
+    // Iterate while we are still in the requested year
+    while (cursor.getUTCFullYear() === year) {
+      // Stop if we've reached the future (for current year)
+      if (year === currentYear && cursor > new Date()) {
+        break;
+      }
+
       const dateStr = cursor.toISOString().split('T')[0];
       const existing = byDate.get(dateStr);
       days.push(existing ?? { date: dateStr, count: 0, level: 0 });
+
+      // Move to next day
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     return days;
